@@ -1,0 +1,69 @@
+import os
+from dotenv import load_dotenv
+import requests
+import tkinter as tk
+import webbrowser
+
+# Load API key from .env file
+load_dotenv("C:/Users/singh/OneDrive/Desktop/AI PROJRCT/Script.py/api.env")
+API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+if not API_KEY:
+    print("API Key not found! Check your .env file.")
+    exit()
+
+# Function to fetch YouTube search results
+def search_youtube():
+    query = search_entry.get()
+    if not query:
+        result_label.config(text="Please enter a search query.")
+        return
+
+    url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={query}&maxResults=5&type=video&key={API_KEY}"
+    response = requests.get(url).json()
+
+    if "items" not in response:
+        result_label.config(text="Error: Could not fetch data.")
+        return
+
+    # Clear previous results
+    for widget in results_frame.winfo_children():
+        widget.destroy()
+
+    # Display results
+    for item in response["items"]:
+        title = item["snippet"]["title"]
+        video_id = item["id"]["videoId"]
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+
+        # Create clickable link
+        link = tk.Label(results_frame, text=title, fg="blue", cursor="hand2", wraplength=400)
+        link.pack(anchor="w", padx=10, pady=2)
+        link.bind("<Button-1>", lambda e, url=video_url: webbrowser.open(url))
+
+    result_label.config(text="Results:")
+
+# GUI Setup
+root = tk.Tk()
+root.title("AI YouTube Video Finder")
+root.geometry("500x400")
+
+# Search Bar
+tk.Label(root, text="Enter search query:", font=("Arial", 12)).pack(pady=5)
+search_entry = tk.Entry(root, width=50)
+search_entry.pack(pady=5)
+
+# Search Button
+search_button = tk.Button(root, text="Search", command=search_youtube, bg="blue", fg="white")
+search_button.pack(pady=5)
+
+# Result Label
+result_label = tk.Label(root, text="", font=("Arial", 12, "bold"))
+result_label.pack(pady=5)
+
+# Results Frame
+results_frame = tk.Frame(root)
+results_frame.pack(pady=5)
+
+# Run GUI
+root.mainloop()

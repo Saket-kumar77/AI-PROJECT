@@ -1,0 +1,77 @@
+import os
+import requests
+import webbrowser
+from dotenv import load_dotenv
+import tkinter as tk
+from tkinter import messagebox, Listbox, Scrollbar
+
+# Load API Key from .env file
+load_dotenv("C:/Users/singh/OneDrive/Desktop/AI PROJRCT/Script.py/api.env")
+API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+# Check if API key is loaded
+if not API_KEY:
+    messagebox.showerror("Error", "❌ API Key not found! Check your .env file.")
+    exit()
+
+# Function to search YouTube
+def search_youtube():
+    query = entry.get()
+    if not query:
+        messagebox.showwarning("Warning", "Please enter a search term!")
+        return
+
+    url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={query}&maxResults=5&type=video&key={API_KEY}"
+    
+    response = requests.get(url).json()
+    
+    # Clear previous results
+    result_list.delete(0, tk.END)
+
+    if "items" not in response:
+        messagebox.showerror("Error", f"❌ API Error: {response}")
+        return
+
+    global video_links
+    video_links = []  # Store video links
+
+    for item in response["items"]:
+        title = item["snippet"]["title"]
+        video_id = item["id"]["videoId"]
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        video_links.append(video_url)
+
+        # Add title to the listbox
+        result_list.insert(tk.END, title)
+
+# Function to open selected video in browser
+def open_video(event):
+    selected_index = result_list.curselection()
+    if selected_index:
+        webbrowser.open(video_links[selected_index[0]])
+
+# Create GUI
+root = tk.Tk()
+root.title("YouTube Video Finder")
+root.geometry("500x400")
+
+# Label & Entry
+tk.Label(root, text="Enter search keyword:").pack(pady=5)
+entry = tk.Entry(root, width=50)
+entry.pack(pady=5)
+
+# Search Button
+tk.Button(root, text="Search", command=search_youtube).pack(pady=5)
+
+# Listbox for results
+scrollbar = Scrollbar(root)
+result_list = Listbox(root, width=70, height=10, yscrollcommand=scrollbar.set)
+result_list.pack(pady=5)
+scrollbar.config(command=result_list.yview)
+scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+# Bind click event to open video
+result_list.bind("<Double-Button-1>", open_video)
+
+# Run the GUI
+root.mainloop()
